@@ -91,7 +91,8 @@ class MaskGitTrainer(BaseAcceleratedTrainer):
         self.save_results_every = save_results_every
         self.batch_size = batch_size
         # maskgit
-        self.model = maskgit
+        self.model = accelerator.unwrap_model(maskgit)
+        # self.model = maskgit.module
         self.model.vae.requires_grad_(False)
         self.model.transformer.t5.requires_grad_(False)
 
@@ -144,7 +145,7 @@ class MaskGitTrainer(BaseAcceleratedTrainer):
     def log_validation_images(
         self, validation_prompts, step, cond_image=None, cond_scale=3, temperature=1
     ):
-        images = self.model.generate(
+        images = self.model.module.generate(
             validation_prompts,
             cond_images=cond_image,
             cond_scale=cond_scale,
@@ -177,7 +178,7 @@ class MaskGitTrainer(BaseAcceleratedTrainer):
                 attn_mask.to(device),
             )
             text_embeds = t5_encode_text_from_encoded(
-                input_ids, attn_mask, self.model.transformer.t5, device
+                input_ids, attn_mask, self.model.module.transformer.t5, device
             )
             loss = self.model(imgs, text_embeds=text_embeds)
             avg_loss = self.accelerator.gather(loss.repeat(self.batch_size)).mean()
@@ -202,7 +203,7 @@ class MaskGitTrainer(BaseAcceleratedTrainer):
             if steps % self.save_model_every == 0:
                 state_dict = self.accelerator.unwrap_model(self.model).state_dict()
                 maskgit_save_name = (
-                    "maskgit_superres" if self.model.cond_image_size else "maskgit"
+                    "maskgit_superres" if self.model.module.cond_image_size else "maskgit"
                 )
                 file_name = (
                     f"{maskgit_save_name}.{steps}.pt"
@@ -228,7 +229,7 @@ class MaskGitTrainer(BaseAcceleratedTrainer):
                 self.print(f"{steps}: saving model to {str(self.results_dir)}")
             if steps % self.save_results_every == 0:
                 cond_image = None
-                if self.model.cond_image_size:
+                if self.model.module.cond_image_size:
                     self.print(
                         "With conditional image training, we recommend keeping the validation prompts to empty strings"
                     )

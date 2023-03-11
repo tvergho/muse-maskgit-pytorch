@@ -17,6 +17,10 @@ from muse_maskgit_pytorch.dataset import (
     ImageTextDataset,
     split_dataset_into_dataloaders,
 )
+import sys
+sys.path.insert(0, '')
+from muse_trainer import get_dataloaders
+from accelerate import notebook_launcher
 
 import argparse
 
@@ -343,18 +347,16 @@ def main():
         accelerator.print("No step found for the MaskGit model.")
         current_step = 0
 
-    dataset = ImageTextDataset(
-        dataset,
-        args.image_size,
-        transformer.tokenizer,
-        image_column=args.image_column,
-        caption_column=args.caption_column,
-        center_crop=not args.no_center_crop,
-        flip=not args.no_flip,
-    )
-    dataloader, validation_dataloader = split_dataset_into_dataloaders(
-        dataset, args.valid_frac, args.seed, args.batch_size
-    )
+#     dataset = ImageTextDataset(
+#         dataset,
+#         args.image_size,
+#         transformer.tokenizer,
+#         image_column=args.image_column,
+#         caption_column=args.caption_column,
+#         center_crop=not args.no_center_crop,
+#         flip=not args.no_flip,
+#     )
+    dataloader, validation_dataloader = get_dataloaders(args.batch_size)
 
     trainer = MaskGitTrainer(
         maskgit,
@@ -385,7 +387,7 @@ def main():
         optimizer=args.optimizer,
         weight_decay=args.weight_decay,
     )
-
+    # 
     trainer.train()
 
 
