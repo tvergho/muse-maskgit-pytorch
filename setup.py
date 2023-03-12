@@ -18,7 +18,7 @@ setup(
         "text-to-image",
     ],
     install_requires=[
-        "accelerate",
+        "accelerate>=0.15.0",
         "diffusers",
         "datasets",
         "beartype",
